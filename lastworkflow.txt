@@ -1,0 +1,369 @@
+Workflow Design for Sequential LLM Processing
+
+Overview
+
+This document outlines the design of a workflow that processes data sequentially using LLM models. The workflow consists of three main tables:
+
+Source Data Table (Table 1): Stores raw data pulled from the source connection.
+
+Workflow Configuration Table (Table 2): Tracks user-defined workflows, processes, and column mappings.
+
+Result Table (Table 3): Iterates through processes (like sentiment analysis and summarization) one at a time, storing results step by step.
+
+Process Flow
+
+
+
+
+
+
+Explanation of Flow
+
+Data Ingestion:
+
+Data is pulled from the source (S3, database, etc.) and stored in Table 1.
+
+Workflow Creation:
+
+The user creates a workflow in Table 2, selecting columns for each process (like sentiment and summarization). The processes and their column mappings are stored in JSON format.
+
+Sequential Processing:
+
+Each row in Table 1 is processed step-by-step — completing one process (like sentiment) before moving to the next (like summarization).
+
+Result Storage:
+
+Results for each process are added to Table 3 — first completing sentiment for all rows, then moving to summarization.
+
+Table Designs
+
+1. Source Data Table (Table 1)
+
+Column Name
+
+Type
+
+Description
+
+id (reference_id)
+
+UUID
+
+Unique identifier for each row.
+
+source_connection
+
+STRING
+
+The source of the data (S3, DB).
+
+data_column_1
+
+TEXT
+
+Example: text for sentiment.
+
+data_column_2
+
+TEXT
+
+Example: text for summary.
+
+created_at
+
+TIMESTAMP
+
+Time data was pulled.
+
+Example:
+
+reference_id
+
+source_connection
+
+data_column_1
+
+data_column_2
+
+created_at
+
+1111-aaaa-bbbb-0001
+
+S3
+
+"I love this movie."
+
+"The plot was great."
+
+2025-03-14 10:00:00
+
+1111-aaaa-bbbb-0002
+
+S3
+
+"This is boring."
+
+"It dragged a lot."
+
+2025-03-14 10:01:00
+
+1111-aaaa-bbbb-0003
+
+S3
+
+"Amazing performance!"
+
+"Best part ever."
+
+2025-03-14 10:02:00
+
+2. Workflow Configuration Table (Table 2)
+
+Column Name
+
+Type
+
+Description
+
+id (workflow_id)
+
+UUID
+
+Unique identifier for each workflow.
+
+workflow_name
+
+TEXT
+
+Name of the user-defined workflow.
+
+source_connection
+
+TEXT
+
+Source connection info.
+
+processes
+
+JSON
+
+Processes and their column mapping, e.g., {"sentiment": "data_column_1", "summarization": "data_column_2"}.
+
+model
+
+TEXT
+
+Model used (e.g., GPT-4).
+
+created_at
+
+TIMESTAMP
+
+Time workflow was created.
+
+Example:
+
+workflow_id
+
+workflow_name
+
+source_connection
+
+processes
+
+model
+
+created_at
+
+2222-aaaa-bbbb-0001
+
+Workflow 1
+
+S3
+
+{"sentiment": "data_column_1", "summarization": "data_column_2"}
+
+gpt-4
+
+2025-03-14 10:05:00
+
+3. Result Table (Table 3)
+
+Column Name
+
+Type
+
+Description
+
+id (result_id)
+
+UUID
+
+Unique identifier for each result.
+
+workflow_id
+
+UUID
+
+Links to the workflow config table.
+
+reference_id
+
+UUID
+
+Links to source data table.
+
+process_name
+
+TEXT
+
+The completed process.
+
+result
+
+TEXT
+
+LLM output result.
+
+status
+
+TEXT
+
+Process status (Pending, Completed).
+
+created_at
+
+TIMESTAMP
+
+Time result was added.
+
+Example:
+
+Step 1: Sentiment Analysis
+
+result_id
+
+workflow_id
+
+reference_id
+
+process_name
+
+result
+
+status
+
+created_at
+
+3333-aaaa-bbbb-0001
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0001
+
+Sentiment
+
+Positive
+
+Completed
+
+2025-03-14 10:06:00
+
+3333-aaaa-bbbb-0002
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0002
+
+Sentiment
+
+Negative
+
+Completed
+
+2025-03-14 10:07:00
+
+3333-aaaa-bbbb-0003
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0003
+
+Sentiment
+
+Positive
+
+Completed
+
+2025-03-14 10:08:00
+
+Step 2: Summarization (after Sentiment is completed)
+
+result_id
+
+workflow_id
+
+reference_id
+
+process_name
+
+result
+
+status
+
+created_at
+
+3333-aaaa-bbbb-0004
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0001
+
+Summarization
+
+"A great plot."
+
+Completed
+
+2025-03-14 10:09:00
+
+3333-aaaa-bbbb-0005
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0002
+
+Summarization
+
+"It dragged a lot."
+
+Completed
+
+2025-03-14 10:10:00
+
+3333-aaaa-bbbb-0006
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0003
+
+Summarization
+
+"Best part ever."
+
+Completed
+
+2025-03-14 10:11:00
+
+Conclusion
+
+This design ensures:
+
+Data flows from source → workflow config → result tables.
+
+Processes happen one at a time — no confusion for users.
+
+All relationships are clear (with workflow_id and reference_id).
+
+Would you like me to add queries for inserting/updating these tables or anything extra? 🚀
+
