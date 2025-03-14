@@ -1,0 +1,302 @@
+Workflow Data Flow and Table Relationships
+
+1. Source Data Table (Table 1)
+
+Purpose: Stores raw data pulled from the source connection.
+
+Schema:
+
+Column Name
+
+Type
+
+Description
+
+id (reference_id)
+
+UUID
+
+Unique identifier for each row.
+
+source_connection
+
+STRING
+
+The source of the data (S3, DB).
+
+data_column_1
+
+TEXT
+
+Example: text for sentiment.
+
+data_column_2
+
+TEXT
+
+Example: text for summary.
+
+created_at
+
+TIMESTAMP
+
+Time data was pulled.
+
+2. Workflow Configuration Table (Table 2)
+
+Purpose: Tracks workflow setup — source, destination, and process details.
+
+Schema:
+
+Column Name
+
+Type
+
+Description
+
+id (workflow_id)
+
+UUID
+
+Unique identifier for each workflow.
+
+workflow_name
+
+TEXT
+
+Name of the user-defined workflow.
+
+source_connection
+
+TEXT
+
+Source connection info.
+
+processes
+
+JSON
+
+Processes and their column mapping, e.g., {"sentiment": "data_column_1", "summarization": "data_column_2"}.
+
+model
+
+TEXT
+
+Model used (e.g., GPT-4).
+
+created_at
+
+TIMESTAMP
+
+Time workflow was created.
+
+3. Result Table (Table 3)
+
+Purpose: Iteratively stores the results of LLM processing — one process at a time.
+
+Schema:
+
+Column Name
+
+Type
+
+Description
+
+id (result_id)
+
+UUID
+
+Unique identifier for each result.
+
+workflow_id
+
+UUID
+
+Links to the workflow config table.
+
+reference_id
+
+UUID
+
+Links to source data table.
+
+process_name
+
+TEXT
+
+The completed process.
+
+result
+
+TEXT
+
+LLM output result.
+
+status
+
+TEXT
+
+Process status (Pending, Completed).
+
+created_at
+
+TIMESTAMP
+
+Time result was added.
+
+Flow of Data
+
+
+
+Example Walkthrough
+
+Source Data Table contains three rows:
+
+reference_id
+
+data_column_1
+
+data_column_2
+
+1111-aaaa-bbbb-0001
+
+"I love this movie."
+
+"The plot was great."
+
+1111-aaaa-bbbb-0002
+
+"This is boring."
+
+"It dragged a lot."
+
+1111-aaaa-bbbb-0003
+
+"Amazing performance!"
+
+"Best part ever."
+
+Workflow Configuration Table stores a single workflow with multiple processes:
+
+workflow_id
+
+workflow_name
+
+source_connection
+
+processes
+
+model
+
+2222-aaaa-bbbb-0001
+
+Workflow 1
+
+S3
+
+{"sentiment": "data_column_1", "summarization": "data_column_2"}
+
+gpt-4
+
+Result Table processes each row one process at a time — only sentiment analysis first:
+
+result_id
+
+workflow_id
+
+reference_id
+
+process_name
+
+result
+
+status
+
+3333-aaaa-bbbb-0001
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0001
+
+Sentiment
+
+Positive
+
+Completed
+
+3333-aaaa-bbbb-0002
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0002
+
+Sentiment
+
+Negative
+
+Completed
+
+3333-aaaa-bbbb-0003
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0003
+
+Sentiment
+
+Positive
+
+Completed
+
+Once Sentiment Analysis is completed, the next process — Summarization — starts row by row:
+
+result_id
+
+workflow_id
+
+reference_id
+
+process_name
+
+result
+
+status
+
+3333-aaaa-bbbb-0004
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0001
+
+Summarization
+
+"A great plot."
+
+Completed
+
+3333-aaaa-bbbb-0005
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0002
+
+Summarization
+
+"It dragged a lot."
+
+Completed
+
+3333-aaaa-bbbb-0006
+
+2222-aaaa-bbbb-0001
+
+1111-aaaa-bbbb-0003
+
+Summarization
+
+"Best part ever."
+
+Completed
+
+Let me know if you'd like more detail on the JSON structure or anything else! 🚀
+
